@@ -1,0 +1,150 @@
+Subject: [PATCH] Deploy EAS on Story Chain
+
+Summary:
+
+Test Plan:
+
+Reviewers:
+
+CC:
+
+Maniphest Tasks:
+
+#########################
+---
+Index: hardhat.config.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/hardhat.config.ts b/hardhat.config.ts
+--- a/hardhat.config.ts	(revision 558250dae4cb434859b1ac3b6d32833c6448be21)
++++ b/hardhat.config.ts	(date 1732237835024)
+@@ -13,6 +13,8 @@
+ import { HardhatUserConfig } from 'hardhat/config';
+ import { MochaOptions } from 'mocha';
+ 
++const { PRIVATE_KEY } = process.env;
++
+ interface EnvOptions {
+   ETHEREUM_PROVIDER_URL?: string;
+   ETHEREUM_ETHERSCAN_API_KEY?: string;
+@@ -42,6 +44,8 @@
+   POLYGON_AMOY_PROVIDER_URL?: string;
+   SCROLL_SEPOLIA_PROVIDER_URL?: string;
+   LINEA_GOERLI_PROVIDER_URL?: string;
++  STORY_ODYSSEY_PROVIDER_URL?: string;
++  STORY_ETHERSCAN_API_URL?: string;
+   PROFILE?: boolean;
+ }
+ 
+@@ -74,6 +78,8 @@
+   POLYGON_ETHERSCAN_API_KEY = '',
+   SCROLL_SEPOLIA_PROVIDER_URL = '',
+   LINEA_GOERLI_PROVIDER_URL = '',
++  STORY_ODYSSEY_PROVIDER_URL = '',
++  STORY_ETHERSCAN_API_URL = '',
+   PROFILE: isProfiling
+ }: EnvOptions = process.env as any as EnvOptions;
+ 
+@@ -277,6 +283,16 @@
+       verify: {
+         etherscan: { apiKey: LINEA_ETHERSCAN_API_KEY }
+       }
++    },
++    [DeploymentNetwork.StoryOdyssey]: {
++      chainId: 1516,
++      url: STORY_ODYSSEY_PROVIDER_URL,
++      saveDeployments: true,
++      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
++      live: true,
++      verify: {
++        etherscan: { apiUrl: STORY_ETHERSCAN_API_URL }
++      }
+     }
+   },
+ 
+Index: package.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/package.json b/package.json
+--- a/package.json	(revision 558250dae4cb434859b1ac3b6d32833c6448be21)
++++ b/package.json	(date 1732218835549)
+@@ -66,6 +66,7 @@
+     "deploy:polygon-amoy": "HARDHAT_NETWORK=polygon-amoy hardhat deploy",
+     "deploy:scroll-sepolia": "HARDHAT_NETWORK=scroll-sepolia hardhat deploy",
+     "deploy:linea-goerli": "HARDHAT_NETWORK=linea-goerli hardhat deploy",
++    "deploy:story-odyssey": "HARDHAT_NETWORK=story-odyssey hardhat deploy",
+     "verify:mainnet": "HARDHAT_NETWORK=mainnet hardhat etherscan-verify --license MIT",
+     "verify:optimism": "HARDHAT_NETWORK=optimism hardhat etherscan-verify --license MIT --api-url https://api-optimistic.etherscan.io",
+     "verify:base": "HARDHAT_NETWORK=base hardhat etherscan-verify --license MIT --api-url https://api.basescan.org",
+@@ -107,11 +108,17 @@
+     "@matterlabs/hardhat-zksync-deploy": "^1.3.0",
+     "@matterlabs/hardhat-zksync-solc": "^1.1.4",
+     "@matterlabs/hardhat-zksync-verify": "^1.4.3",
++    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+     "@nomicfoundation/hardhat-ethers": "^3.0.6",
++    "@nomicfoundation/hardhat-ignition": "^0.15.7",
++    "@nomicfoundation/hardhat-ignition-ethers": "^0.15.7",
++    "@nomicfoundation/hardhat-network-helpers": "^1.0.12",
+     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
++    "@nomicfoundation/ignition-core": "^0.15.7",
+     "@nomiclabs/hardhat-solhint": "^4.0.0",
+     "@openzeppelin/contracts": "5.0.2",
+     "@typechain/ethers-v6": "^0.5.1",
++    "@typechain/hardhat": "^9.1.0",
+     "@types/chai": "^4.3.17",
+     "@types/chance": "^1.1.6",
+     "@types/mocha": "^10.0.7",
+@@ -131,6 +138,7 @@
+     "hardhat-contract-sizer": "^2.10.0",
+     "hardhat-deploy": "^0.12.4",
+     "hardhat-deploy-ethers": "^0.4.2",
++    "hardhat-gas-reporter": "^1.0.10",
+     "mocha": "^10.7.0",
+     "mocha-silent-reporter": "^1.0.0",
+     "prettier": "^3.3.3",
+@@ -138,7 +146,9 @@
+     "prettier-plugin-solidity": "^1.3.1",
+     "solc": "0.8.27",
+     "solhint": "^5.0.3",
++    "solidity-coverage": "^0.8.13",
+     "ts-node": "^10.9.2",
++    "typechain": "^8.3.2",
+     "typescript": "^5.5.4",
+     "typescript-eslint": "^8.0.1",
+     "zksync-ethers": "^6.7.1"
+Index: data/NamedAccounts.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/data/NamedAccounts.ts b/data/NamedAccounts.ts
+--- a/data/NamedAccounts.ts	(revision 558250dae4cb434859b1ac3b6d32833c6448be21)
++++ b/data/NamedAccounts.ts	(date 1732220249812)
+@@ -29,6 +29,7 @@
+     [DeploymentNetwork.PolygonAmoy]: deployer,
+     [DeploymentNetwork.ScrollSepolia]: deployer,
+     [DeploymentNetwork.LineaGoerli]: deployer,
++    [DeploymentNetwork.StoryOdyssey]: deployer,
+     [DeploymentNetwork.Hardhat]: 0
+   }
+ };
+Index: utils/Constants.ts
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/utils/Constants.ts b/utils/Constants.ts
+--- a/utils/Constants.ts	(revision 558250dae4cb434859b1ac3b6d32833c6448be21)
++++ b/utils/Constants.ts	(date 1732063933140)
+@@ -20,6 +20,7 @@
+   PolygonAmoy = 'polygon-amoy',
+   ScrollSepolia = 'scroll-sepolia',
+   LineaGoerli = 'linea-goerli',
++  StoryOdyssey = 'story-odyssey',
+   Hardhat = 'hardhat'
+ }
+ 
